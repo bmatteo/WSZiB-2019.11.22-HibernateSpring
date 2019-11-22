@@ -1,16 +1,19 @@
-package pl.edu.wszib.db;
+package pl.edu.wszib.dao.impl2;
 
-import org.hibernate.*;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.springframework.stereotype.Component;
+import pl.edu.wszib.dao.ICarDAO;
 import pl.edu.wszib.model.Car;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CarRepository {
+@Component
+public class CarDAOImpl implements ICarDAO {
     private static SessionFactory factory = new Configuration().configure().buildSessionFactory();
 
-    public static void persistCar(Car car) {
+    public void persistCar(Car car) {
         Session session = factory.openSession();
         Transaction tx = null;
         try {
@@ -25,7 +28,7 @@ public class CarRepository {
         }
     }
 
-    public static Car getCarById(int id) {
+    public Car getCarById(int id) {
         Session session = factory.openSession();
 
         Car car = (Car) session.createQuery("FROM pl.edu.wszib.model.Car WHERE id = " + id).uniqueResult();
@@ -34,11 +37,19 @@ public class CarRepository {
         return car;
     }
 
-    public static List<Car> getAllBMWCars() {
+    @Override
+    public void updateCar(Car car) {
         Session session = factory.openSession();
-
-        List<Car> bmwCars = session.createQuery("FROM pl.edu.wszib.model.Car WHERE brand = 'BMW'").list();
-
-        return bmwCars;
+        Transaction tx = null;
+        try {
+            tx = session.beginTransaction();
+            session.update(car);
+            //wiecej operacji
+            tx.commit();
+        } catch (HibernateException e) {
+            if(tx != null) tx.rollback();
+        } finally {
+            session.close();
+        }
     }
 }
